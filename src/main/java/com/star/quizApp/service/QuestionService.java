@@ -3,9 +3,13 @@ package com.star.quizApp.service;
 import com.star.quizApp.dao.QuestionDao;
 import com.star.quizApp.model.Question;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class QuestionService {
@@ -21,19 +25,23 @@ public class QuestionService {
         return questionDao.findByCategoryIgnoreCase(category);
     }
 
-
     public String addQuestion(Question question) {
-        questionDao.save(question);
-        return "Question added successfully";
+        try {
+            questionDao.save(question);
+            return "Question added successfully";
+        } catch (Exception e) {
+            throw new RuntimeException("Error saving question", e);
+        }
     }
 
     public Question updateQuestion(int id, Question question) {
-        Question existingQuestion = questionDao.findById(id).orElse(null);
+        Optional<Question> existingQuestionOpt = questionDao.findById(id);
 
-        if (existingQuestion == null) {
+        if (existingQuestionOpt.isEmpty()) {
             return null;
         }
 
+        Question existingQuestion = existingQuestionOpt.get();
         existingQuestion.setQuestionTitle(question.getQuestionTitle());
         existingQuestion.setOption1(question.getOption1());
         existingQuestion.setOption2(question.getOption2());
@@ -51,9 +59,9 @@ public class QuestionService {
     }
 
     public String deleteQuestion(int id) {
-        Question existingQuestion = questionDao.findById(id).orElse(null);
+        Optional<Question> existingQuestionOpt = questionDao.findById(id);
 
-        if (existingQuestion == null) {
+        if (existingQuestionOpt.isEmpty()) {
             return "Question not found";
         }
 
