@@ -12,7 +12,7 @@ public class Quiz {
     private Integer id;
     private String title;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     private List<Question> questions;
 
     public Integer getId() {

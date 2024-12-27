@@ -1,13 +1,14 @@
 package com.star.quizApp.controller;
 
-import com.star.quizApp.model.Quiz;
+import com.star.quizApp.exception.ResourceNotFoundException;
+import com.star.quizApp.model.*;
 import com.star.quizApp.service.QuizService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/quiz")
@@ -20,11 +21,43 @@ public class QuizController {
     public ResponseEntity<?> getQuiz(@RequestParam String category, @RequestParam int noOfQuestions, @RequestParam String title) {
         try{
             Quiz result = quizService.createQuiz(category, noOfQuestions, title);
-            return ResponseEntity.status(201).body(result);
+            return ResponseEntity.status(HttpStatus.CREATED).body(result);
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No questions found for the given category.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid input data.");
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error creating quiz");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while creating the quiz.");
         }
-
     }
+
+    @GetMapping("/get/{id}")
+    public ResponseEntity<List<QuestionWrapper>> getQuizQuestions(@PathVariable int id) {
+        List<QuestionWrapper> result = quizService.getQuizQuestions(id);
+        return ResponseEntity.ok(result);
+    }
+
+
+    @PostMapping("/submit/{id}")
+    public ResponseEntity<?> submitQuiz(@PathVariable int id, @RequestBody List<ResponseQuiz> response) {
+        try {
+            int score = quizService.calculateResult(id, response);
+            int totalQuestions = response.size();
+
+            QuizSubmissionResponse submissionResponse = new QuizSubmissionResponse();
+            submissionResponse.setScore(score);
+            submissionResponse.setTotalQuestions(totalQuestions);
+            submissionResponse.setMessage("Quiz submitted successfully. Thank you for participating!");
+
+            return ResponseEntity.ok(submissionResponse);
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Quiz not found: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while submitting the quiz.");
+        }
+    }
+
+
+
 
 }
